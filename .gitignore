@@ -1,0 +1,17 @@
+**/.settings/
+**/.classpath
+**/.checkstyle
+**/.project
+**/.*.swp
+*.DS_Store*
+**/test-output/
+**/.metadata/
+.recommenders/
+**/.springBeans
+**/.factorypath
+.idea/
+*.iml
+/bin/
+**/bin/
+**/.mvn/
+.gitignore
