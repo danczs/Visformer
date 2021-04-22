@@ -1,5 +1,5 @@
 # Visformer
-![pytorch](https://img.shields.io/badge/pytorch-v1.0.0-green.svg?style=plastic)
+![pytorch](https://img.shields.io/badge/pytorch-v1.7.0-green.svg?style=plastic)
 
 ## Introduction
 This is a pytorch implementation for the Visformer models. This project is based on the training code in [Deit](https://github.com/facebookresearch/deit) and the tools in [timm](https://github.com/rwightman/pytorch-image-models).
