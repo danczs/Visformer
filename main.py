@@ -5,9 +5,11 @@ https://github.com/facebookresearch/deit/blob/main/main.py
 
 import argparse
 import datetime
+import time
 import torch.backends.cudnn as cudnn
 import json
-
+import torch
+import numpy as np
 from pathlib import Path
 
 from timm.data import Mixup
@@ -66,12 +68,12 @@ def get_args_parser():
     parser.add_argument('--warmup-epochs', type=int, default=5, metavar='N',
                         help='epochs to warmup LR, if scheduler supports')
 
-    #parser.add_argument('--cooldown-epochs', type=int, default=10, metavar='N',
-    #                    help='epochs to cooldown LR at min_lr, after cyclic schedule ends')
+    parser.add_argument('--cooldown-epochs', type=int, default=10, metavar='N',
+                         help='epochs to cooldown LR at min_lr, after cyclic schedule ends')
     #parser.add_argument('--patience-epochs', type=int, default=10, metavar='N',
     #                    help='patience epochs for Plateau LR scheduler (default: 10')
-    #parser.add_argument('--decay-rate', '--dr', type=float, default=0.1, metavar='RATE',
-    #                    help='LR decay rate (default: 0.1)')
+    parser.add_argument('--decay-rate', '--dr', type=float, default=0.1, metavar='RATE',
+                        help='LR decay rate (default: 0.1)')
 
     # Augmentation parameters
     parser.add_argument('--color-jitter', type=float, default=0.4, metavar='PCT',
@@ -83,6 +85,7 @@ def get_args_parser():
     parser.add_argument('--train-interpolation', type=str, default='bicubic',
                         help='Training interpolation (random, bilinear, bicubic default: "bicubic")')
 
+    parser.add_argument('--std-aug', action='store_ture', default=False)
     parser.add_argument('--repeated-aug', action='store_true')
     parser.add_argument('--no-repeated-aug', action='store_false', dest='repeated_aug')
     parser.set_defaults(repeated_aug=True)
@@ -146,9 +149,6 @@ def main(args):
     utils.init_distributed_mode(args)
 
     print(args)
-
-    if args.distillation_type != 'none' and args.finetune and not args.eval:
-        raise NotImplementedError("Finetuning with distillation not yet supported")
 
     device = torch.device(args.device)
 
@@ -272,8 +272,7 @@ def main(args):
 
         train_stats = train_one_epoch(
             model, criterion, data_loader_train,
-            optimizer, device, epoch, loss_scaler,
-            args.clip_grad, model_ema, mixup_fn
+            optimizer, device, epoch, mixup_fn
         )
 
         lr_scheduler.step(epoch)

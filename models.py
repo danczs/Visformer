@@ -1,16 +1,12 @@
 import torch
 import torch.nn as nn
-#from functools import partical
 from einops import rearrange
 from weight_init import to_2tuple, trunc_normal_
-import time
-import torch.nn.functional as F
-import numpy as np
 
-#python -m pip install torch==1.7.1 torchvision==0.8.2 torchaudio==0.7.2
-#python -m pip install timm
-#python -m pip install einops
-#git
+
+__all__=[
+    'visformer_small', 'visformer_tiny', 'net1', 'net2', 'net3', 'net4', 'net5', 'net6', 'net7'
+]
 
 def drop_path(x, drop_prob:float = 0., training: bool = False):
     if drop_prob == 0. or not training:
@@ -43,6 +39,7 @@ class LayerNorm(nn.Module):
 
 class BatchNorm(nn.Module):
     def __init__(self, dim):
+        super().__init__()
         self.bn = nn.BatchNorm2d(dim, eps=1e-5, momentum=0.1, track_running_stats=True)
 
     def forward(self, x):
@@ -62,13 +59,13 @@ class Mlp(nn.Module):
             if group < 2: #net setting
                 hidden_features = in_features * 5 // 6
             else:
-                hidden_features = in_features * 2.0
+                hidden_features = in_features * 2
         self.hidden_features = hidden_features
         self.group = group
         self.drop = nn.Dropout(drop)
         self.conv1 = nn.Conv2d(in_features, hidden_features, 1, stride=1, padding=0, bias=False)
         self.act1 = act_layer()
-        if self.spatical_conv:
+        if self.spatial_conv:
             self.conv2 = nn.Conv2d(hidden_features, hidden_features, 3, stride=1, padding=1,
                                    groups=self.group, bias=False)
             self.act2 = act_layer()
@@ -91,6 +88,7 @@ class Mlp(nn.Module):
 class Attention(nn.Module):
     def __init__(self, dim, num_heads=8, head_dim_ratio=1., qkv_bias=False, qk_scale=None,
                  attn_drop=0., proj_drop=0.):
+        super().__init__()
         self.dim = dim
         self.num_heads = num_heads
         head_dim = round(dim // num_heads * head_dim_ratio)
@@ -102,6 +100,7 @@ class Attention(nn.Module):
         self.proj_drop = nn.Dropout(proj_drop)
 
     def forward(self, x):
+        B, C, H, W = x.shape
         x = self.qkv(x)
         qkv = rearrange(x, 'b (x y z) h w -> x b y (h w) z', x=3, y=self.num_heads, z=self.head_dim)
         q, k, v = qkv[0], qkv[1], qkv[2]
@@ -118,7 +117,7 @@ class Attention(nn.Module):
 
 class Block(nn.Module):
     def __init__(self, dim, num_heads, head_dim_ratio=1., mlp_ratio=4., qkv_bias=False, qk_scale=None,
-                 drop=0., attn_drop=0., drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm,
+                 drop=0., attn_drop=0., drop_path=0., act_layer=nn.GELU, norm_layer=LayerNorm,
                  group=8, attn_disabled=False, spatial_conv=False):
         super().__init__()
         self.attn_disabled = attn_disabled
@@ -127,12 +126,12 @@ class Block(nn.Module):
         if not attn_disabled:
             self.norm1 = norm_layer(dim)
             self.attn = Attention(dim, num_heads=num_heads, head_dim_ratio=head_dim_ratio, qkv_bias=qkv_bias,
-                                  qk_scale=qk_scale, atten_drop=attn_drop, proj_drop=drop)
+                                  qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
 
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop,
-                       spatial_conv=spatial_conv) # new setting
+                       group=group, spatial_conv=spatial_conv) # new setting
 
     def forward(self, x):
         if not self.attn_disabled:
@@ -167,8 +166,8 @@ class PatchEmbed(nn.Module):
 
 
 class Visformer(nn.Module):
-    def __init__(self, img_size=224, patch_size=16, init_channels=32, num_classes=1000, embed_dim=768, depth=12,
-                 num_heads=12, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0.,
+    def __init__(self, img_size=224, patch_size=16, init_channels=32, num_classes=1000, embed_dim=384, depth=12,
+                 num_heads=6, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0.,
                  drop_path_rate=0., norm_layer=LayerNorm, attn_stage='111', pos_embed=True, spatial_conv='111',
                  vit_embedding=False, group=8, pool=True, conv_init=False, embeding_norm=None):
         super().__init__()
@@ -199,22 +198,25 @@ class Visformer(nn.Module):
                 self.using_stem = False
                 self.patch_embed1 = PatchEmbed(img_size=img_size, patch_size=8, in_chans=3, embed_dim=embed_dim//2,
                                                norm_layer=embeding_norm)
+                img_size //= 8
             else:
                 self.using_stem = True
                 self.stem = nn.Sequential(
                     nn.Conv2d(3, self.init_channels, 7, stride=2, padding=3, bias=False),
-                    BatchNorm(self,init_channels),
+                    BatchNorm(self.init_channels),
                     nn.ReLU(inplace=True)
                 )
                 img_size //= 2
                 self.patch_embed1 = PatchEmbed(img_size=img_size, patch_size=4, in_chans=self.init_channels,
                                                embed_dim=embed_dim//2, norm_layer=embeding_norm)
+                img_size //= 4
+
         if self.pos_embed:
             if self.vit_embedding:
                 self.pos_embed1 = nn.Parameter(torch.zeros(1, embed_dim, img_size, img_size))
             else:
                 self.pos_embed1 = nn.Parameter(torch.zeros(1, embed_dim//2, img_size, img_size))
-                self.pos_drop = nn.Dropout(p=drop_rate)
+            self.pos_drop = nn.Dropout(p=drop_rate)
         self.stage1 = nn.ModuleList([
             Block(
                 dim=embed_dim//2, num_heads=num_heads, head_dim_ratio=0.5, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
@@ -259,7 +261,7 @@ class Visformer(nn.Module):
         # head
         if self.pool:
             self.global_pooling = nn.AdaptiveAvgPool2d(1)
-        if self.stage_num3 > 0:
+        if not self.vit_embedding:
             self.norm = norm_layer(embed_dim*2)
             self.head = nn.Linear(embed_dim*2, num_classes)
         else:
@@ -329,7 +331,8 @@ class Visformer(nn.Module):
             x = self.global_pooling(x)
         else:
             x = x[:, :, 0, 0]
-        x = self.head(x)
+
+        x = self.head( x.view(x.size(0), -1) )
         return x
 
 

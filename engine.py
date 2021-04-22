@@ -25,7 +25,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             samples, targets = mixup_fn(samples, targets)
 
         outputs = model(samples)
-        loss = criterion(samples, outputs, targets)
+        loss = criterion(outputs, targets)
 
         loss_value = loss.item()
 
