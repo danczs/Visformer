@@ -85,7 +85,7 @@ def get_args_parser():
     parser.add_argument('--train-interpolation', type=str, default='bicubic',
                         help='Training interpolation (random, bilinear, bicubic default: "bicubic")')
 
-    parser.add_argument('--std-aug', action='store_ture', default=False)
+    parser.add_argument('--std-aug', action='store_true', default=False)
     parser.add_argument('--repeated-aug', action='store_true')
     parser.add_argument('--no-repeated-aug', action='store_false', dest='repeated_aug')
     parser.set_defaults(repeated_aug=True)

@@ -94,7 +94,7 @@ class Attention(nn.Module):
         head_dim = round(dim // num_heads * head_dim_ratio)
         self.head_dim = head_dim
         self.scale = qk_scale or head_dim ** -0.5
-        self.qkv = nn.Conv2d(dim, head_dim * num_heads * 3, 1, stride=1, padding=0, bias=False)
+        self.qkv = nn.Conv2d(dim, head_dim * num_heads * 3, 1, stride=1, padding=0, bias=qkv_bias)
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj = nn.Conv2d(self.head_dim * self.num_heads, dim, 1, stride=1, padding=0, bias=False)
         self.proj_drop = nn.Dropout(proj_drop)
@@ -105,6 +105,7 @@ class Attention(nn.Module):
         qkv = rearrange(x, 'b (x y z) h w -> x b y (h w) z', x=3, y=self.num_heads, z=self.head_dim)
         q, k, v = qkv[0], qkv[1], qkv[2]
         attn = (q @ k.transpose(-2,-1)) * self.scale
+        attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
         x = attn @ v
 
@@ -169,7 +170,7 @@ class Visformer(nn.Module):
     def __init__(self, img_size=224, patch_size=16, init_channels=32, num_classes=1000, embed_dim=384, depth=12,
                  num_heads=6, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0.,
                  drop_path_rate=0., norm_layer=LayerNorm, attn_stage='111', pos_embed=True, spatial_conv='111',
-                 vit_embedding=False, group=8, pool=True, conv_init=False, embeding_norm=None):
+                 vit_embedding=False, group=8, pool=True, conv_init=False, embedding_norm=None):
         super().__init__()
         self.num_classes = num_classes
         self.num_features = self.embed_dim = embed_dim
@@ -191,13 +192,13 @@ class Visformer(nn.Module):
         if self.vit_embedding:
             self.using_stem = False
             self.patch_embed1 = PatchEmbed(img_size=img_size, patch_size=16, in_chans=3, embed_dim=embed_dim,
-                                           norm_layer=embeding_norm)
+                                           norm_layer=embedding_norm)
             img_size //= 16
         else:
             if self.init_channels is None:
                 self.using_stem = False
                 self.patch_embed1 = PatchEmbed(img_size=img_size, patch_size=8, in_chans=3, embed_dim=embed_dim//2,
-                                               norm_layer=embeding_norm)
+                                               norm_layer=embedding_norm)
                 img_size //= 8
             else:
                 self.using_stem = True
@@ -208,7 +209,7 @@ class Visformer(nn.Module):
                 )
                 img_size //= 2
                 self.patch_embed1 = PatchEmbed(img_size=img_size, patch_size=4, in_chans=self.init_channels,
-                                               embed_dim=embed_dim//2, norm_layer=embeding_norm)
+                                               embed_dim=embed_dim//2, norm_layer=embedding_norm)
                 img_size //= 4
 
         if self.pos_embed:
@@ -229,7 +230,7 @@ class Visformer(nn.Module):
         #stage2
         if not self.vit_embedding:
             self.patch_embed2 = PatchEmbed(img_size=img_size, patch_size=2, in_chans=embed_dim//2, embed_dim=embed_dim,
-                                           norm_layer=embeding_norm)
+                                           norm_layer=embedding_norm)
             img_size //= 2
             if self.pos_embed:
                 self.pos_embed2 = nn.Parameter(torch.zeros(1, embed_dim, img_size, img_size))
@@ -245,7 +246,7 @@ class Visformer(nn.Module):
         # stage 3
         if not self.vit_embedding:
             self.patch_embed3 = PatchEmbed(img_size=img_size, patch_size=2, in_chans=embed_dim, embed_dim=embed_dim*2,
-                                           norm_layer=embeding_norm)
+                                           norm_layer=embedding_norm)
             img_size //= 2
             if self.pos_embed:
                 self.pos_embed3 = nn.Parameter(torch.zeros(1, embed_dim*2, img_size, img_size))
@@ -338,13 +339,15 @@ class Visformer(nn.Module):
 
 def visformer_tiny(**kwargs):
     model = Visformer(img_size=224, init_channels=16, embed_dim=192, depth=[7,4,4], num_heads=3, mlp_ratio=4., group=8,
-                      attn_stage='011', spatial_conv='100', norm_layer=BatchNorm, conv_init=True, **kwargs)
+                      attn_stage='011', spatial_conv='100', norm_layer=BatchNorm, conv_init=True,
+                      embedding_norm=BatchNorm, **kwargs)
     return model
 
 
 def visformer_small(**kwargs):
     model = Visformer(img_size=224, init_channels=32, embed_dim=384, depth=[7,4,4], num_heads=6, mlp_ratio=4., group=8,
-                      attn_stage='011', spatial_conv='100', norm_layer=BatchNorm, conv_init=True, **kwargs)
+                      attn_stage='011', spatial_conv='100', norm_layer=BatchNorm, conv_init=True,
+                      embedding_norm=BatchNorm, **kwargs)
     return model
 
 
