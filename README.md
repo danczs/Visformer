@@ -37,3 +37,4 @@ Visformer_tiny
 ```bash
 python -m torch.distributed.launch --nproc_per_node=4 --use_env main.py --model visformer_tiny --batch_size 256 --data-path /path/to/imagenet --output_dir /path/to/save
 ```
+For the current version, visformer_small can achieve 82.28% on ImageNet. 
