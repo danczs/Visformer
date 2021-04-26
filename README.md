@@ -28,7 +28,7 @@ The layout of Imagenet data:
     class2/
       img2.jpeg
 ```
-##Network Training:
+## Network Training:
 Visformer_small
 ```bash
 python -m torch.distributed.launch --nproc_per_node=8 --use_env main.py --model visformer_small --batch_size 64 --data-path /path/to/imagenet --output_dir /path/to/save
