@@ -238,7 +238,7 @@ class Visformer(nn.Module):
             Block(
                 dim=embed_dim, num_heads=num_heads, head_dim_ratio=1.0, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
                 qk_scale=qk_scale, drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer,
-                group=group*3//2, attn_disabled=(attn_stage[1] == '0'), spatial_conv=(spatial_conv[1] == '1')
+                group=group, attn_disabled=(attn_stage[1] == '0'), spatial_conv=(spatial_conv[1] == '1')
             )
             for i in range(self.stage_num1, self.stage_num1+self.stage_num2)
         ])
