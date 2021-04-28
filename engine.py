@@ -1,5 +1,7 @@
 #Based on Deit: Facebook, Inc.
 #https://github.com/facebookresearch/deit/blob/main/engine.py
+#Amp is removed, beacause it causes nan values sometimes. 
+#see also in deit issue(nan value): https://github.com/facebookresearch/deit/issues/29
 
 from typing import Iterable, Optional
 import torch
