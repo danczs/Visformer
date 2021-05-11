@@ -38,3 +38,6 @@ Visformer_tiny
 python -m torch.distributed.launch --nproc_per_node=4 --use_env main.py --model visformer_tiny --batch-size 256 --drop-path 0.0 --data-path /path/to/imagenet --output_dir /path/to/save
 ```
 For the current version, visformer_small can achieve 82.28% on ImageNet. 
+
+## Pre-trained model
+Beacause of the ploicy of our institution, we cannot send the pre-trained models out directly. Thankfully, @hzhang57 provides a [model](https://drive.google.com/drive/folders/18GpH1SeVOsq3_2QGTA5Z_3O1UFtKugEu?usp=sharing) trained by himself.
