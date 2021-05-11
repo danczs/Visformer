@@ -40,4 +40,4 @@ python -m torch.distributed.launch --nproc_per_node=4 --use_env main.py --model 
 For the current version, visformer_small can achieve 82.28% on ImageNet. 
 
 ## Pre-trained model
-Beacause of the ploicy of our institution, we cannot send the pre-trained models out directly. Thankfully, @hzhang57 provides a [model](https://drive.google.com/drive/folders/18GpH1SeVOsq3_2QGTA5Z_3O1UFtKugEu?usp=sharing) trained by himself.
+Beacause of the ploicy of our institution, we cannot send the pre-trained models out directly. Thankfully, @[hzhang57](https://github.com/hzhang57) provides a [model](https://drive.google.com/drive/folders/18GpH1SeVOsq3_2QGTA5Z_3O1UFtKugEu?usp=sharing) trained by himself.
