@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from einops import rearrange
 from weight_init import to_2tuple, trunc_normal_
-
+import torch.nn.functional as F
 
 __all__=[
     'visformer_small', 'visformer_tiny', 'net1', 'net2', 'net3', 'net4', 'net5', 'net6', 'net7'
@@ -27,14 +27,15 @@ class DropPath(nn.Module):
     def forward(self, x):
         return drop_path(x, self.drop_prob, self.training)
 
+#copy from timm
+class LayerNorm(nn.LayerNorm):
+    """ Layernorm f or channels of '2d' spatial BCHW tensors """
+    def __init__(self, num_channels):
+        super().__init__([num_channels, 1, 1])
 
-class LayerNorm(nn.Module):
-    def __init__(self, dim):
-        super().__init__()
-        self.ln = nn.LayerNorm(dim)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return F.layer_norm(x, self.normalized_shape, self.weight, self.bias, self.eps)
 
-    def forward(self, x):
-        return self.ln(x.permute(0,2,3,1)).permute(0,3,1,2)
 
 
 class BatchNorm(nn.Module):
@@ -93,7 +94,11 @@ class Attention(nn.Module):
         self.num_heads = num_heads
         head_dim = round(dim // num_heads * head_dim_ratio)
         self.head_dim = head_dim
-        self.scale = qk_scale or head_dim ** -0.5
+        # self.scale = qk_scale or head_dim ** -0.5
+        #new qk_scale to avoid NAN when using amp.
+        qk_scale_factor = qk_scale if qk_scale is not None else -0.25
+        self.scale = head_dim ** qk_scale_factor
+
         self.qkv = nn.Conv2d(dim, head_dim * num_heads * 3, 1, stride=1, padding=0, bias=qkv_bias)
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj = nn.Conv2d(self.head_dim * self.num_heads, dim, 1, stride=1, padding=0, bias=False)
@@ -104,7 +109,7 @@ class Attention(nn.Module):
         x = self.qkv(x)
         qkv = rearrange(x, 'b (x y z) h w -> x b y (h w) z', x=3, y=self.num_heads, z=self.head_dim)
         q, k, v = qkv[0], qkv[1], qkv[2]
-        attn = (q @ k.transpose(-2,-1)) * self.scale
+        attn = ( (q * self.scale) @ (k.transpose(-2,-1) * self.scale) )
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
         x = attn @ v

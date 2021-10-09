@@ -16,7 +16,8 @@ from timm.data import Mixup
 from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 from timm.scheduler import create_scheduler
 from timm.optim import create_optimizer
-from timm.utils import get_state_dict
+#from timm.utils import get_state_dict
+from timm.utils import NativeScaler
 
 from datasets import build_dataset
 from engine import train_one_epoch, evaluate
@@ -40,7 +41,12 @@ def get_args_parser():
     parser.add_argument('--drop-path', type=float, default=0.1, metavar='PCT',
                         help='Drop path rate (default: 0.1)')
 
+    parser.add_argument('--qk-scale-factor', type=float, default=None, metavar='PCT',
+                        help='scale q & k in self-attention. scale = head_dim ** qk-scale-factor')
+
     # Optimizer parameters
+    parser.add_argument('--amp', action='store_true', default=False,
+                        help='using automatic mixed precision (amp)')
     parser.add_argument('--opt', default='adamw', type=str, metavar='OPTIMIZER',
                         help='Optimizer (default: "adamw"')
     parser.add_argument('--opt-eps', default=1e-8, type=float, metavar='EPSILON',
@@ -120,7 +126,6 @@ def get_args_parser():
     parser.add_argument('--data-set', default='IMNET', choices=['CIFAR', 'IMNET', 'IMNET100', 'IMNET10'],
                         type=str, help='Image Net dataset path')
 
-
     parser.add_argument('--output_dir', default='',
                         help='path where to save, empty for no saving')
     parser.add_argument('--device', default='cuda',
@@ -156,14 +161,14 @@ def main(args):
     seed = args.seed + utils.get_rank()
     torch.manual_seed(seed)
     np.random.seed(seed)
-    # random.seed(seed)
+    #random.seed(seed)
 
     cudnn.benchmark = True
 
     dataset_train, args.nb_classes = build_dataset(is_train=True, args=args)
     dataset_val, _ = build_dataset(is_train=False, args=args)
 
-    if True:  # args.distributed:
+    if args.distributed:
         num_tasks = utils.get_world_size()
         global_rank = utils.get_rank()
         if args.repeated_aug:
@@ -216,8 +221,8 @@ def main(args):
     model = eval(args.model)(
         num_classes=args.nb_classes,
         drop_rate=args.drop,
-        drop_path_rate= args.drop_path
-
+        drop_path_rate=args.drop_path,
+        qk_scale=args.qk_scale_factor
     )
 
     model.to(device)
@@ -232,10 +237,10 @@ def main(args):
     linear_scaled_lr = args.lr * args.batch_size * utils.get_world_size() / 512.0
     args.lr = linear_scaled_lr
     optimizer = create_optimizer(args, model_without_ddp)
-
+    loss_scaler = NativeScaler()
     lr_scheduler, _ = create_scheduler(args, optimizer)
 
-    criterion = LabelSmoothingCrossEntropy()
+    #criterion = LabelSmoothingCrossEntropy()
 
     if args.mixup > 0.:
         # smoothing is handled with mixup label transform
@@ -257,9 +262,11 @@ def main(args):
             optimizer.load_state_dict(checkpoint['optimizer'])
             lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
             args.start_epoch = checkpoint['epoch'] + 1
+            if 'scaler' in checkpoint:
+                loss_scaler.load_state_dict(checkpoint['scaler'])
 
     if args.eval:
-        test_stats = evaluate(data_loader_val, model, device)
+        test_stats = evaluate(data_loader_val, model, device, amp=args.amp)
         print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
         return
 
@@ -272,7 +279,7 @@ def main(args):
 
         train_stats = train_one_epoch(
             model, criterion, data_loader_train,
-            optimizer, device, epoch, mixup_fn
+            optimizer, device, epoch, loss_scaler, mixup_fn, amp=args.amp
         )
 
         lr_scheduler.step(epoch)
@@ -285,11 +292,11 @@ def main(args):
                     'lr_scheduler': lr_scheduler.state_dict(),
                     'epoch': epoch,
                     #'model_ema': get_state_dict(model_ema),
-                    #'scaler': loss_scaler.state_dict(),
+                    'scaler': loss_scaler.state_dict(),
                     'args': args,
                 }, checkpoint_path)
 
-        test_stats = evaluate(data_loader_val, model, device)
+        test_stats = evaluate(data_loader_val, model, device, amp=args.amp)
         print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
         max_accuracy = max(max_accuracy, test_stats["acc1"])
         print(f'Max accuracy: {max_accuracy:.2f}%')

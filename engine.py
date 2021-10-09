@@ -12,7 +12,8 @@ import utils
 
 def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
-                    device: torch.device, epoch: int, mixup_fn: Optional[Mixup] = None):
+                    device: torch.device, epoch: int, loss_scaler,
+                    mixup_fn: Optional[Mixup] = None, amp=False):
     model.train()
     metric_logger = utils.MetricLogger(delimiter="  ")
     metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
@@ -25,15 +26,21 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
         if mixup_fn is not None:
             samples, targets = mixup_fn(samples, targets)
-
-        outputs = model(samples)
-        loss = criterion(outputs, targets)
+        with torch.cuda.amp.autocast(enabled=amp):
+            outputs = model(samples)
+            loss = criterion(outputs, targets)
 
         loss_value = loss.item()
-
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+
+        if amp:
+            # this attribute is added by timm on one optimizer (adahessian)
+            is_second_order = hasattr(optimizer, 'is_second_order') and optimizer.is_second_order
+            loss_scaler(loss, optimizer, clip_grad='norm', parameters=model.parameters(),
+                        create_graph=is_second_order)
+        else:
+            loss.backward()
+            optimizer.step()
 
         torch.cuda.synchronize()
 
@@ -46,7 +53,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
 
 @torch.no_grad()
-def evaluate(data_loader, model, device):
+def evaluate(data_loader, model, device, amp=False):
     criterion = torch.nn.CrossEntropyLoss()
 
     metric_logger = utils.MetricLogger(delimiter="  ")
@@ -58,9 +65,9 @@ def evaluate(data_loader, model, device):
     for images, target in metric_logger.log_every(data_loader, 10, header):
         images = images.to(device, non_blocking=True)
         target = target.to(device, non_blocking=True)
-
-        output = model(images)
-        loss = criterion(output, target)
+        with torch.cuda.amp.autocast(enabled = amp):
+            output = model(images)
+            loss = criterion(output, target)
 
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
 
