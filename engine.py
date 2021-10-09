@@ -36,10 +36,10 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         if amp:
             # this attribute is added by timm on one optimizer (adahessian)
             is_second_order = hasattr(optimizer, 'is_second_order') and optimizer.is_second_order
-            loss_scaler(loss, optimizer, clip_grad='norm', parameters=model.parameters(),
+            loss_scaler(loss, optimizer, clip_grad=None, parameters=model.parameters(),
                         create_graph=is_second_order)
         else:
-            loss.backward()
+            loss.backward() 
             optimizer.step()
 
         torch.cuda.synchronize()
