@@ -39,7 +39,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             loss_scaler(loss, optimizer, clip_grad=None, parameters=model.parameters(),
                         create_graph=is_second_order)
         else:
-            loss.backward() 
+            loss.backward()
             optimizer.step()
 
         torch.cuda.synchronize()

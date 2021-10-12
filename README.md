@@ -41,3 +41,27 @@ For the current version, visformer_small can achieve 82.2% on ImageNet.
 
 ## Pre-trained model
 Beacause of the policy of our institution, we cannot send the pre-trained models out directly. Thankfully, @[hzhang57](https://github.com/hzhang57)  and @[developer0hye](https://github.com/developer0hye) provides [Visformer_small](https://drive.google.com/drive/folders/18GpH1SeVOsq3_2QGTA5Z_3O1UFtKugEu?usp=sharing) and [Visformer_tiny](https://drive.google.com/file/d/1LLBGbj7-ok1fDvvMCab-Fn5T3cjTzOKB/view?usp=sharing) models trained by themselves.
+
+## Automatic Mixed Precision (amp)
+In the original version of Visformer, amp can cause NaN values. We find that the overflow comes from the attention mask:
+```python
+scale = head_dim ** -0.5
+attn = ( q  @ k.transpose(-2,-1) ) * scale
+``` 
+To avoid overflow, we pre-normalize q & k, and, thus, overall normalize 'attn' with 'head_dim' instead of  'head_dim ** 0.5':
+```python
+scale = head_dim ** -0.5
+attn =  (q * scale) @ (k.transpose(-2,-1) * scale) 
+```
+Amp training:
+```bash
+python -m torch.distributed.launch --nproc_per_node=8 --use_env main.py --model visformer_small --batch-size 64 --data-path /path/to/imagenet --output_dir /path/to/save --amp --qk-scale-factor=-0.5
+python -m torch.distributed.launch --nproc_per_node=4 --use_env main.py --model visformer_tiny --batch-size 256 --drop-path 0.03 --data-path /path/to/imagenet --output_dir /path/to/save --amp --qk-scale-factor=-0.5
+```
+This change won't degrade the training performance. 
+
+Using amp for the original pre-trained models:
+```bash
+python -m torch.distributed.launch --nproc_per_node=8 --use_env main.py --model visformer_small --batch-size 64 --data-path /path/to/imagenet --output_dir /path/to/save --eval --resume /path/to/weights --amp
+```
+
