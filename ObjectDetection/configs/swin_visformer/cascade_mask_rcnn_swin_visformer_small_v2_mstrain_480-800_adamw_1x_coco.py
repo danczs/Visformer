@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/models/cascade_mask_rcnn_swin_fpn.py',
+    '../_base_/models/cascade_mask_rcnn_swin_visformer_fpn.py',
     '../_base_/datasets/coco_instance.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
@@ -7,7 +7,7 @@ _base_ = [
 model = dict(
     backbone=dict(
         embed_dim=256,
-        depths=[1, 10, 14, 3],
+        depth=[1, 10, 14, 3],
         num_heads=[2, 4, 8, 16],
         drop_path_rate=0.0,
         use_checkpoint=False

@@ -10,7 +10,7 @@ from einops import rearrange
 from timm.models.layers import to_2tuple, trunc_normal_
 import torch.nn.functional as F
 from mmcv.runner import load_checkpoint
-from mmdet_utils import get_root_logger
+from mmdet.utils import get_root_logger
 import numpy as np
 import torch.utils.checkpoint as checkpoint
 
@@ -265,7 +265,7 @@ class Block(nn.Module):
                 x = torch.roll(shifted_x, shifts=(self.shift_size, self.shift_size), dims=(2, 3))
             else:
                 x = shifted_x
-            if pad_r > 0 and pad_b >0:
+            if pad_r > 0 or pad_b >0:
                 x = x[:, :, :H, :W].contiguous()
 
             # FFN
@@ -292,8 +292,8 @@ class PatchEmbed(nn.Module):
 class SwinVisformer(nn.Module):
     def __init__(self, init_channels=32, num_classes=1000, embed_dim=384,
                  depth=[0, 7, 4, 4], num_heads=6, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_rate=0.,
-                 attn_drop_rate=0., drop_path_rate=0., norm_layer=LayerNorm, attn_stage='111',
-                 spatial_conv='111', group=8, pool=True, conv_init=False, embedding_norm=BatchNorm,
+                 attn_drop_rate=0., drop_path_rate=0., norm_layer=LayerNorm, attn_stage='1111',
+                 spatial_conv='1111', group=8, pool=True, conv_init=False, embedding_norm=BatchNorm,
                  out_indices=(0,1,2,3), frozen_stages=-1, use_checkpoint=False):
         super().__init__()
         self.num_classes = num_classes
@@ -390,7 +390,7 @@ class SwinVisformer(nn.Module):
 
     def init_weights(self, pretrained=None):
 
-        def _init_weights(self, m):
+        def _init_weights(m):
             if isinstance(m, nn.Linear):
                 trunc_normal_(m.weight, std=0.02)
                 if m.bias is not None:
