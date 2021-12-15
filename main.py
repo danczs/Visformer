@@ -24,7 +24,7 @@ from engine import train_one_epoch, evaluate
 from samplers import RASampler
 from models import *
 import utils
-
+from swin_models import *
 
 def get_args_parser():
     parser = argparse.ArgumentParser('DeiT training and evaluation script', add_help=False)

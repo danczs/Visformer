@@ -5,7 +5,7 @@ from weight_init import to_2tuple, trunc_normal_
 import torch.nn.functional as F
 
 __all__=[
-    'swin_visformer_small_v2', 'swin_visformer_small_v2_wope'
+    'swin_visformer_small_v2', 'swin_visformer_tiny_v2'
 ]
 
 def drop_path(x, drop_prob:float = 0., training: bool = False):
@@ -514,12 +514,6 @@ def visformer_tiny(**kwargs):
     return model
 
 
-def visformer_small(**kwargs):
-    model = SwinVisformer(img_size=224, init_channels=32, embed_dim=384, depth=[7,4,4], num_heads=6, mlp_ratio=4., group=8,
-                      attn_stage='011', spatial_conv='100', norm_layer=BatchNorm, conv_init=True,
-                      embedding_norm=BatchNorm, **kwargs)
-    return model
-
 def swin_visformer_small(**kwargs):
     model = SwinVisformer(img_size=224, init_channels=32, embed_dim=384, depth=[0,7,4,4], num_heads=6, mlp_ratio=4.,
                       group=8, attn_stage='0011', spatial_conv='1100', norm_layer=BatchNorm, conv_init=True,
@@ -532,10 +526,10 @@ def swin_visformer_small_v2(**kwargs):
                       conv_init=True, embedding_norm=BatchNorm, **kwargs)
     return model
 
-def swin_visformer_small_v2_wope(**kwargs):
-    model = SwinVisformer(img_size=224, init_channels=32, embed_dim=256, depth=[1,10,14,3], num_heads=[2,4,8,16],
-                      mlp_ratio=4., group=8, attn_stage='0011', spatial_conv='1100', norm_layer=BatchNorm,
-                      conv_init=True, embedding_norm=BatchNorm, pos_embed=False, **kwargs)
+def swin_visformer_tiny_v2(**kwargs):
+    model = SwinVisformer(img_size=224, init_channels=24, embed_dim=192, depth=[1, 4, 6, 3], num_heads=[1, 3, 6, 12],
+                          mlp_ratio=4., group=8, attn_stage='0011', spatial_conv='1100', norm_layer=BatchNorm,
+                          conv_init=True, embedding_norm=BatchNorm, **kwargs)
     return model
 
 if __name__ == '__main__':
