@@ -13,7 +13,7 @@ Install pytorch, timm and einops:
 ```bash
 pip install -r requirements.txt
 ```
-## Data preparation
+## Data Preparation
 The layout of Imagenet data:
 ```bash
 /path/to/imagenet/
@@ -53,6 +53,8 @@ The model performance:
 | Visformer_tiny | 78.6| 1.3 | 10.3 |
 | Visformer_small_V2 | 79.6 | 1.3 | 9.4 |
 
+[More information about Visformer V2](https://arxiv.org/abs/2104.12533).
+
 ## Object Detection on COCO
 The standard self-attention is not efficient for high-reolution inputs, 
 so we simply replace the standard self-attention with Swin-attention for object detection. Therefore, Swin Transformer is our directly baseline. 
@@ -75,7 +77,7 @@ so we simply replace the standard self-attention with Swin-attention for object 
 
 This repo only contains the key files for object detection ('./ObjectDetction'). [Swin-Visformer-Object-Detection](https://github.com/danczs/Swin-Visformer-Object-Detection)  is the full detection project.
 
-## Pre-trained model
+## Pre-trained Model
 Beacause of the policy of our institution, we cannot send the pre-trained models out directly. Thankfully, @[hzhang57](https://github.com/hzhang57)  and @[developer0hye](https://github.com/developer0hye) provides [Visformer_small](https://drive.google.com/drive/folders/18GpH1SeVOsq3_2QGTA5Z_3O1UFtKugEu?usp=sharing) and [Visformer_tiny](https://drive.google.com/file/d/1LLBGbj7-ok1fDvvMCab-Fn5T3cjTzOKB/view?usp=sharing) models trained by themselves.
 
 ## Automatic Mixed Precision (amp)
