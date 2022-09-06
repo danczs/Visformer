@@ -48,8 +48,8 @@ The model performance:
 
 | model | top-1 (%) | FLOPs (G) | paramters (M) | 
 | :---: | :---: |  :---: | :---: | 
-| Visformer_small | 82.2 | 40.2 | 4.9 |
-| Visformer_small_V2 | 83.0 | 23.6 | 4.3 |
+| Visformer_small | 82.2 |  4.9 | 40.2 |
+| Visformer_small_V2 | 83.0 | 4.3 |23.6 | 
 | Visformer_tiny | 78.6| 1.3 | 10.3 |
 | Visformer_small_V2 | 79.6 | 1.3 | 9.4 |
 
