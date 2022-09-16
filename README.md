@@ -102,4 +102,11 @@ Using amp for the original pre-trained models:
 ```bash
 python -m torch.distributed.launch --nproc_per_node=8 --use_env main.py --model visformer_small --batch-size 64 --data-path /path/to/imagenet --output_dir /path/to/save --eval --resume /path/to/weights --amp
 ```
-
+## Citing
+@inproceedings{chen2021visformer,
+  title={Visformer: The vision-friendly transformer},
+  author={Chen, Zhengsu and Xie, Lingxi and Niu, Jianwei and Liu, Xuefeng and Wei, Longhui and Tian, Qi},
+  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision},
+  pages={589--598},
+  year={2021}
+}
