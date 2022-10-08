@@ -2,7 +2,7 @@
 ![pytorch](https://img.shields.io/badge/pytorch-v1.7.0-green.svg?style=plastic)
 
 ## Introduction
-This is a pytorch implementation for the Visformer models. This project is based on the training code in [Deit](https://github.com/facebookresearch/deit) and the tools in [timm](https://github.com/rwightman/pytorch-image-models).
+This is a pytorch implementation for the Visformer models. This project is based on the training code in [DeiT](https://github.com/facebookresearch/deit) and the tools in [timm](https://github.com/rwightman/pytorch-image-models).
 
 ## Usage
 Clone the repository:
@@ -54,6 +54,7 @@ The model performance:
 | Visformer_small_V2  |   83.0    |   23.6    |      4.3      |
 | Visformer_medium_V2 |   83.6    |   44.5    |      8.5      |
 
+pre-trained models:
 
 |                       model                       |   model    |   log   | top-1 (%) | 
 |:-------------------------------------------------:|:----------:|:-------:|:---------:|
