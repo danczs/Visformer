@@ -56,12 +56,12 @@ The model performance:
 
 pre-trained models:
 
-|                       model                       |   model    |   log   | top-1 (%) | 
-|:-------------------------------------------------:|:----------:|:-------:|:---------:|
-|            Visformer_small (original)             | [github]() | [log]() |   82.21   |
-|  Visformer_small  (+ Swin for downstream tasks)   | [github]() | [log]() |   82.34   |
-| Visformer_small_v2 (+ Swin for downstream tasks)  | [github]() | [log]() |   83.00   |
-| Visformer_medium_v2 (+ Swin for downstream tasks) | [github]() | [log]() |   83.62   |
+|                       model                       |   model    |                                                 log                                                 | top-1 (%) | 
+|:-------------------------------------------------:|:----------:|:---------------------------------------------------------------------------------------------------:|:---------:|
+|            Visformer_small (original)             | [github](https://github.com/danczs/Visformer/releases/download/v1.0.0/visformer_small.pth) |   [github](https://github.com/danczs/Visformer/releases/download/v1.0.0/log_visformer_small.txt)    |   82.21   |
+|  Visformer_small  (+ Swin for downstream tasks)   | [github](https://github.com/danczs/Visformer/releases/download/v1.0.0/swin_visformer_small.pth) |  [github](https://github.com/danczs/Visformer/releases/download/v1.0.0/log_swin_visformer_small.txt)   |   82.34   |
+| Visformer_small_v2 (+ Swin for downstream tasks)  | [github](https://github.com/danczs/Visformer/releases/download/v1.0.0/swin_visformer_small_v2.pth) | [github](https://github.com/danczs/Visformer/releases/download/v1.0.0/log_swin_visformer_small_v2.txt) |   83.00   |
+| Visformer_medium_v2 (+ Swin for downstream tasks) | [github](https://github.com/danczs/Visformer/releases/download/v1.0.0/swin_visofrmer_medium.pth) |    [github](https://github.com/danczs/Visformer/releases/download/v1.0.0/log_visformer_medium.txt)     |   83.62   |
 
 (In some logs, the model is only tested for the last 50 epochs to save the training time.)
 
