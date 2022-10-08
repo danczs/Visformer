@@ -14,4 +14,9 @@
 /bin/
 **/bin/
 **/.mvn/
+batchnorm_swin.py
+swin_models_norm.py
+swin_models_norm2.py
+outputs
+visformer_v2_tiny
 .gitignore

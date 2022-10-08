@@ -46,19 +46,30 @@ python -m torch.distributed.launch --nproc_per_node=4 --use_env main.py --model 
 ```
 The model performance:
 
-| model | top-1 (%) | FLOPs (G) | paramters (M) | 
-| :---: | :---: |  :---: | :---: | 
-| Visformer_small | 82.2 |  4.9 | 40.2 |
-| Visformer_small_V2 | 83.0 | 4.3 |23.6 | 
-| Visformer_tiny | 78.6| 1.3 | 10.3 |
-| Visformer_small_V2 | 79.6 | 1.3 | 9.4 |
+|        model        | top-1 (%) | FLOPs (G) | paramters (M) | 
+|:-------------------:|:---------:|:---------:|:-------------:|
+|   Visformer_tiny    |   78.6    |    1.3    |     10.3      |
+|  Visformer_tiny_V2  |   79.6    |    1.3    |      9.4      |
+|   Visformer_small   |   82.2    |   40.2    |      4.9      |
+| Visformer_small_V2  |   83.0    |   23.6    |      4.3      |
+| Visformer_medium_V2 |   83.6    |   44.5    |      8.5      |
+
+
+|                       model                       |   model    |   log   | top-1 (%) | 
+|:-------------------------------------------------:|:----------:|:-------:|:---------:|
+|            Visformer_small (original)             | [github]() | [log]() |   82.21   |
+|  Visformer_small  (+ Swin for downstream tasks)   | [github]() | [log]() |   82.34   |
+| Visformer_small_v2 (+ Swin for downstream tasks)  | [github]() | [log]() |   83.00   |
+| Visformer_medium_v2 (+ Swin for downstream tasks) | [github]() | [log]() |   83.62   |
+
+(In some logs, the model is only tested for the last 50 epochs to save the training time.)
 
 [More information about Visformer V2](https://arxiv.org/abs/2104.12533).
 
 ## Object Detection on COCO
 The standard self-attention is not efficient for high-reolution inputs, 
 so we simply replace the standard self-attention with Swin-attention for object detection. Therefore, Swin Transformer is our directly baseline. 
-###Mask R-CNN
+### Mask R-CNN
 | Backbone | sched | box mAP | mask mAP | params | FLOPs | FPS |
 | :---: | :---: |  :---: | :---: |  :---: |  :---: | :---: | 
 | Swin-T |1x| 42.6 | 39.3 | 48 | 267 | 14.8 |
@@ -67,7 +78,7 @@ so we simply replace the standard self-attention with Swin-attention for object 
 |Swin-T |3x + MS|  46.0 | 41.6 | 48 | 367 | 14.8 |
 | VisformerV2-S | 3x + MS| 47.8 | 42.5 | 43 | 262 | 15.2 |
 
-###Cascade Mask R-CNN
+### Cascade Mask R-CNN
 | Backbone | sched | box mAP | mask mAP | params | FLOPs | FPS |
 | :---: | :---: |  :---: | :---: |  :---: |  :---: | :---: |
 | Swin-T |1x + MS|  48.1 | 41.7 | 86 | 745 | 9.5 |
@@ -102,6 +113,7 @@ Using amp for the original pre-trained models:
 ```bash
 python -m torch.distributed.launch --nproc_per_node=8 --use_env main.py --model visformer_small --batch-size 64 --data-path /path/to/imagenet --output_dir /path/to/save --eval --resume /path/to/weights --amp
 ```
+
 ## Citing
 ```bash
 @inproceedings{chen2021visformer,

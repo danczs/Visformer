@@ -5,7 +5,8 @@ from weight_init import to_2tuple, trunc_normal_
 import torch.nn.functional as F
 
 __all__=[
-    'swin_visformer_small_v2', 'swin_visformer_tiny_v2'
+    'swin_visformer_small_v2', 'swin_visformer_tiny_v2','Block','swin_visformer_small_161010','swin_visformer_small',
+    'swin_visformer_small_16163','swin_visformer_small_13183','swin_visformer_small_131111','swin_visformer_medium_v2'
 ]
 
 def drop_path(x, drop_prob:float = 0., training: bool = False):
@@ -28,7 +29,7 @@ class DropPath(nn.Module):
         return drop_path(x, self.drop_prob, self.training)
 
 
-class LayerNorm(nn.LayerNorm):
+class LayerNorm(nn.Module):
     """ Layernorm with BCHW tensors """
     def __init__(self, dim, eps=1e-5):
         super().__init__()
@@ -190,6 +191,7 @@ class WindowAttention(nn.Module):
         qkv = rearrange(x, 'b (x y z) h w -> x b y (h w) z', x=3, y=self.num_heads, z=self.head_dim)
         q, k, v = qkv[0], qkv[1], qkv[2]
         attn = ( (q * self.scale) @ (k.transpose(-2,-1) * self.scale))
+        #print(torch.mean(attn),torch.min(attn),torch.max(attn),torch.std(attn))
 
         ###
         relative_position_bias = self.relative_position_bias_table[self.relative_position_index.view(-1)].view(
@@ -507,9 +509,9 @@ class SwinVisformer(nn.Module):
         return x
 
 
-def visformer_tiny(**kwargs):
+def swin_visformer_tiny(**kwargs):
     model = SwinVisformer(img_size=224, init_channels=16, embed_dim=192, depth=[7,4,4], num_heads=3, mlp_ratio=4., group=8,
-                      attn_stage='011', spatial_conv='100', norm_layer=BatchNorm, conv_init=True,
+                      attn_stage='0011', spatial_conv='1100', norm_layer=BatchNorm, conv_init=True,
                       embedding_norm=BatchNorm, **kwargs)
     return model
 
@@ -526,11 +528,49 @@ def swin_visformer_small_v2(**kwargs):
                       conv_init=True, embedding_norm=BatchNorm, **kwargs)
     return model
 
+def swin_visformer_small_161010(**kwargs):
+    model = SwinVisformer(img_size=224, init_channels=32, embed_dim=256, depth=[1,6,10,10], num_heads=[2,4,8,16],
+                      mlp_ratio=4., group=8, attn_stage='0011', spatial_conv='1100', norm_layer=BatchNorm,
+                      conv_init=True, embedding_norm=BatchNorm, **kwargs)
+    return model
+
+def swin_visformer_small_16163(**kwargs):
+    model = SwinVisformer(img_size=224, init_channels=32, embed_dim=256, depth=[1,6,16,3], num_heads=[2,4,8,16],
+                      mlp_ratio=4., group=8, attn_stage='0011', spatial_conv='1100', norm_layer=BatchNorm,
+                      conv_init=True, embedding_norm=BatchNorm, **kwargs)
+    return model
+
+def swin_visformer_small_13183(**kwargs):
+    model = SwinVisformer(img_size=224, init_channels=32, embed_dim=256, depth=[1,3,18,3], num_heads=[2,4,8,16],
+                      mlp_ratio=4., group=8, attn_stage='0011', spatial_conv='1100', norm_layer=BatchNorm,
+                      conv_init=True, embedding_norm=BatchNorm, **kwargs)
+    return model
+
+def swin_visformer_small_131111(**kwargs):
+    model = SwinVisformer(img_size=224, init_channels=32, embed_dim=256, depth=[1,3,11,11], num_heads=[2,4,8,16],
+                      mlp_ratio=4., group=8, attn_stage='0011', spatial_conv='1100', norm_layer=BatchNorm,
+                      conv_init=True, embedding_norm=BatchNorm, **kwargs)
+    return model
+
+
 def swin_visformer_tiny_v2(**kwargs):
     model = SwinVisformer(img_size=224, init_channels=24, embed_dim=192, depth=[1, 4, 6, 3], num_heads=[1, 3, 6, 12],
                           mlp_ratio=4., group=8, attn_stage='0011', spatial_conv='1100', norm_layer=BatchNorm,
                           conv_init=True, embedding_norm=BatchNorm, **kwargs)
     return model
+
+def swin_visformer_medium_v2(**kwargs):
+    model = SwinVisformer(img_size=224, init_channels=32, embed_dim=384, depth=[1,8,14,2], num_heads=[2,4,8,16],
+                      mlp_ratio=4., group=8, attn_stage='0011', spatial_conv='1100', norm_layer=BatchNorm,
+                      conv_init=True, embedding_norm=BatchNorm, **kwargs)
+    return model
+
+# def swin_visformer_medium_depth_v2(**kwargs):
+#     model = SwinVisformer(img_size=224, init_channels=32, embed_dim=256, depth=[1,15,28,3], num_heads=[2,4,8,16],
+#                       mlp_ratio=4., group=8, attn_stage='0011', spatial_conv='1100', norm_layer=BatchNorm,
+#                       conv_init=True, embedding_norm=BatchNorm, **kwargs)
+#     return model
+
 
 if __name__ == '__main__':
     torch.manual_seed(0)

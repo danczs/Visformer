@@ -19,17 +19,36 @@ from timm.optim import create_optimizer
 #from timm.utils import get_state_dict
 from timm.utils import NativeScaler
 
+#from timm.models import
 from datasets import build_dataset
 from engine import train_one_epoch, evaluate
 from samplers import RASampler
 from models import *
 import utils
 from swin_models import *
+import logging as logger
 from mobilenetv2 import my_mobilenet_v2,timm_mobilenet_v2, vis_mobilenet_v2
+
+from torchvision.models import resnet18
+from torchvision.models import resnet50
+from compared_models import CSWin_64_12211_tiny_224,CSWin_64_24322_small_224
+from compared_models import pvt_small,pvt_medium,pvt_tiny
+from compared_models import pvt_v2_b0,pvt_v2_b1,pvt_v2_b2,pvt_v2_b2_li,pvt_v2_b3,pvt_v2_b4
+from compared_models import t2t_vit_t_14,t2t_vit_t_19
+from compared_models import Conformer_tiny_patch16, Conformer_small_patch16
+from compared_models import cvt_13,cvt_21
+from compared_models import focal_s,focal_t
+from compared_models import autoformer_t,autoformer_s
+
+from timm.models import deit_tiny_patch16_224,deit_small_patch16_224, deit_tiny_distilled_patch16_224,deit_small_distilled_patch16_224,deit_base_patch16_224,deit_base_distilled_patch16_224
+from timm.models import deit_base_patch16_224
+from timm.models import regnety_040,regnety_080
+from timm.models.swin_transformer import swin_tiny_patch4_window7_224,swin_small_patch4_window7_224
+from timm.models.efficientnet import efficientnet_b3, efficientnet_b2, efficientnet_b4,efficientnet_b1, efficientnet_b5, efficientnet_b0
 
 def get_args_parser():
     parser = argparse.ArgumentParser('DeiT training and evaluation script', add_help=False)
-    parser.add_argument('--batch-size', default=64, type=int)
+    parser.add_argument('--batch-size', default=256, type=int)
     parser.add_argument('--epochs', default=300, type=int)
 
     # Model parameters
@@ -124,7 +143,7 @@ def get_args_parser():
                         help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"')
 
     # Dataset parameters
-    parser.add_argument('--data-path', default='./dataset', type=str,
+    parser.add_argument('--data-path', default='../../dataset/imagenet', type=str,
                         help='dataset path')
     parser.add_argument('--data-set', default='IMNET', choices=['CIFAR', 'IMNET', 'IMNET100', 'IMNET10'],
                         type=str, help='Image Net dataset path')
@@ -167,20 +186,20 @@ def main(args):
 
     cudnn.benchmark = True
 
-    dataset_train, args.nb_classes = build_dataset(is_train=True, args=args)
+    # dataset_train, args.nb_classes = build_dataset(is_train=True, args=args)
     dataset_val, _ = build_dataset(is_train=False, args=args)
 
     if args.distributed:
         num_tasks = utils.get_world_size()
         global_rank = utils.get_rank()
-        if args.repeated_aug:
-            sampler_train = RASampler(
-                dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True
-            )
-        else:
-            sampler_train = torch.utils.data.DistributedSampler(
-                dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True
-            )
+        # if args.repeated_aug:
+        #     sampler_train = RASampler(
+        #         dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True
+        #     )
+        # # else:
+        #     sampler_train = torch.utils.data.DistributedSampler(
+        #         dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True
+        #     )
         if args.dist_eval:
             if len(dataset_val) % num_tasks != 0:
                 print('Warning: Enabling distributed evaluation with an eval dataset not divisible by process number. '
@@ -191,20 +210,20 @@ def main(args):
         else:
             sampler_val = torch.utils.data.SequentialSampler(dataset_val)
     else:
-        sampler_train = torch.utils.data.RandomSampler(dataset_train)
+        # sampler_train = torch.utils.data.RandomSampler(dataset_train)
         sampler_val = torch.utils.data.SequentialSampler(dataset_val)
 
-    data_loader_train = torch.utils.data.DataLoader(
-        dataset_train, sampler=sampler_train,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-        pin_memory=args.pin_mem,
-        drop_last=True,
-    )
+    # data_loader_train = torch.utils.data.DataLoader(
+    #     dataset_train, sampler=sampler_train,
+    #     batch_size=args.batch_size,
+    #     num_workers=args.num_workers,
+    #     pin_memory=args.pin_mem,
+    #     drop_last=True,
+    # )
 
     data_loader_val = torch.utils.data.DataLoader(
         dataset_val, sampler=sampler_val,
-        batch_size=int(1.5 * args.batch_size),
+        batch_size=int(args.batch_size),
         num_workers=args.num_workers,
         pin_memory=args.pin_mem,
         drop_last=False
@@ -216,19 +235,21 @@ def main(args):
         mixup_fn = Mixup(
             mixup_alpha=args.mixup, cutmix_alpha=args.cutmix, cutmix_minmax=args.cutmix_minmax,
             prob=args.mixup_prob, switch_prob=args.mixup_switch_prob, mode=args.mixup_mode,
-            label_smoothing=args.smoothing, num_classes=args.nb_classes)
+            label_smoothing=args.smoothing, num_classes=1000)
 
     print(f"Creating model: {args.model}")
 
-    if 'mobile' in args.model:
-        model = eval(args.model+'()')
-    else:
+    if 'visformer' in args.model:
+
         model = eval(args.model)(
-            num_classes=args.nb_classes,
+            num_classes=1000,
             drop_rate=args.drop,
             drop_path_rate=args.drop_path,
             qk_scale=args.qk_scale_factor
         )
+
+    else:
+        model = eval(args.model + '()')
 
     model.to(device)
 
@@ -247,94 +268,27 @@ def main(args):
 
     #criterion = LabelSmoothingCrossEntropy()
 
-    if args.mixup > 0.:
-        # smoothing is handled with mixup label transform
-        criterion = SoftTargetCrossEntropy()
-    elif args.smoothing:
-        criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
-    else:
-        criterion = torch.nn.CrossEntropyLoss()
+    throughput(data_loader_val, model, logger)
 
-    output_dir = Path(args.output_dir)
-    if args.resume:
-        if args.resume.startswith('https'):
-            checkpoint = torch.hub.load_state_dict_from_url(
-                args.resume, map_location='cpu', check_hash=True)
-        else:
-            checkpoint = torch.load(args.resume, map_location='cpu')
-        if 'model' in checkpoint:
-            model_without_ddp.load_state_dict(checkpoint['model'])
-        else:
-            model_without_ddp.load_state_dict(checkpoint)
-        if not args.eval and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
-            optimizer.load_state_dict(checkpoint['optimizer'])
-            lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
-            args.start_epoch = checkpoint['epoch'] + 1
-            if 'scaler' in checkpoint:
-                loss_scaler.load_state_dict(checkpoint['scaler'])
-
-    if args.eval:
-        test_stats = evaluate(data_loader_val, model, device, amp=args.amp)
-        print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
+@torch.no_grad()
+def throughput(data_loader, model, logger):
+    model.eval()
+    for idx, (images, _) in enumerate(data_loader):
+        images = images.cuda(non_blocking=True)
+        batch_size = images.shape[0]
+        for i in range(50):
+            model(images)
+        torch.cuda.synchronize()
+        print(f"throughput averaged with 30 times")
+        tic1 = time.time()
+        for i in range(30):
+            model(images)
+        torch.cuda.synchronize()
+        tic2 = time.time()
+        print(f"batch_size {batch_size} throughput {30 * batch_size / (tic2 - tic1)}")
         return
 
-    print(f"Start training for {args.epochs} epochs")
-    start_time = time.time()
-    max_accuracy = 0.0
-    for epoch in range(args.start_epoch, args.epochs):
-        if args.distributed:
-            data_loader_train.sampler.set_epoch(epoch)
 
-        train_stats = train_one_epoch(
-            model, criterion, data_loader_train,
-            optimizer, device, epoch, loss_scaler, mixup_fn, amp=args.amp
-        )
-
-        lr_scheduler.step(epoch)
-        if args.output_dir:
-            checkpoint_paths = [output_dir / 'checkpoint.pth']
-            for checkpoint_path in checkpoint_paths:
-                utils.save_on_master({
-                    'model': model_without_ddp.state_dict(),
-                    'optimizer': optimizer.state_dict(),
-                    'lr_scheduler': lr_scheduler.state_dict(),
-                    'epoch': epoch,
-                    #'model_ema': get_state_dict(model_ema),
-                    'scaler': loss_scaler.state_dict(),
-                    'args': args,
-                }, checkpoint_path)
-
-        if args.skip_test is False or epoch >= 250:
-
-            test_stats = evaluate(data_loader_val, model, device, amp=args.amp)
-            print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
-            if test_stats["acc1"] > max_accuracy and args.output_dir is not None:
-                checkpoint_paths = [output_dir / 'best.pth']
-                for checkpoint_path in checkpoint_paths:
-                    utils.save_on_master({
-                        'model': model_without_ddp.state_dict(),
-                        'optimizer': optimizer.state_dict(),
-                        'lr_scheduler': lr_scheduler.state_dict(),
-                        'epoch': epoch,
-                        #'model_ema': get_state_dict(model_ema),
-                        'scaler': loss_scaler.state_dict(),
-                        'args': args,
-                    }, checkpoint_path)
-            max_accuracy = max(max_accuracy, test_stats["acc1"])
-            print(f'Max accuracy: {max_accuracy:.2f}%')
-
-            log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
-                         **{f'test_{k}': v for k, v in test_stats.items()},
-                         'epoch': epoch,
-                         'n_parameters': n_parameters}
-
-            if args.output_dir and utils.is_main_process():
-                with (output_dir / "log.txt").open("a") as f:
-                    f.write(json.dumps(log_stats) + "\n")
-
-    total_time = time.time() - start_time
-    total_time_str = str(datetime.timedelta(seconds=int(total_time)))
-    print('Training time {}'.format(total_time_str))
 
 
 if __name__ == '__main__':

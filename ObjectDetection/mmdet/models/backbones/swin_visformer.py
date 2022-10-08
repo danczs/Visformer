@@ -292,8 +292,8 @@ class PatchEmbed(nn.Module):
 class SwinVisformer(nn.Module):
     def __init__(self, init_channels=32, num_classes=1000, embed_dim=384,
                  depth=[0, 7, 4, 4], num_heads=6, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_rate=0.,
-                 attn_drop_rate=0., drop_path_rate=0., norm_layer=LayerNorm, attn_stage='1111',
-                 spatial_conv='1111', group=8, pool=True, conv_init=False, embedding_norm=BatchNorm,
+                 attn_drop_rate=0., drop_path_rate=0., norm_layer=BatchNorm, attn_stage='111',
+                 spatial_conv='111', group=8, pool=True, conv_init=False, embedding_norm=BatchNorm,
                  out_indices=(0,1,2,3), frozen_stages=-1, use_checkpoint=False):
         super().__init__()
         self.num_classes = num_classes
@@ -389,7 +389,6 @@ class SwinVisformer(nn.Module):
             self.add_module(layer_name, layer)
 
     def init_weights(self, pretrained=None):
-
         def _init_weights(m):
             if isinstance(m, nn.Linear):
                 trunc_normal_(m.weight, std=0.02)
@@ -495,10 +494,17 @@ class SwinVisformer(nn.Module):
 
         return tuple(outs)
 
+def swin_od_visformer_small():
+    model = SwinVisformer(init_channels=32, embed_dim=384, depth=[0,7,4,4], num_heads=[6,6,6,6], attn_stage='0011',
+                          spatial_conv='1100', norm_layer=BatchNorm,embedding_norm=BatchNorm)
+    return model
+
 def swin_od_visformer_small_v2():
     model = SwinVisformer(init_channels=32, embed_dim=256, depth=[1,10,14,3], num_heads=[2,4,8,16],attn_stage='0011',
                           spatial_conv='1100', norm_layer=BatchNorm, conv_init=True, embedding_norm=BatchNorm)
     return model
+
+
 
 if __name__ == '__main__':
     torch.manual_seed(0)

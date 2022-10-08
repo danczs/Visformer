@@ -9,10 +9,10 @@ model = dict(
         embed_dim=256,
         depth=[1, 10, 14, 3],
         num_heads=[2, 4, 8, 16],
-        drop_path_rate=0.1,
+        drop_path_rate=0.2,
         use_checkpoint=False
     ),
-    neck=dict(in_channels=[96, 192, 384, 768]))
+    neck=dict(in_channels=[64, 128, 256, 512]))#unfixed
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
