@@ -50,9 +50,9 @@ The model performance:
 |:-------------------:|:---------:|:---------:|:-------------:|
 |   Visformer_tiny    |   78.6    |    1.3    |     10.3      |
 |  Visformer_tiny_V2  |   79.6    |    1.3    |      9.4      |
-|   Visformer_small   |   82.2    |   40.2    |      4.9      |
-| Visformer_small_V2  |   83.0    |   23.6    |      4.3      |
-| Visformer_medium_V2 |   83.6    |   44.5    |      8.5      |
+|   Visformer_small   |   82.2    |    4.9    |     40.2      |
+| Visformer_small_V2  |   83.0    |    4.3    |     23.6      |
+| Visformer_medium_V2 |   83.6    |    8.5    |     44.5      |
 
 pre-trained models:
 
